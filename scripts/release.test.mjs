@@ -120,3 +120,17 @@ test('production promoter refuses preview, forks and missing credentials before 
     assert.notEqual(res.status, 0); assert.match(res.stderr, /refused|token missing/);
   }
 });
+
+test('promotion rejection logs a fixed reason and never arbitrary credential-bearing response text', () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), 'cfsm-rejected-'));
+  try {
+    const bootstrap = path.join(tmp, 'network.mjs');
+    for (const reason of ['Invalid validation credential', 'server echoed '+ 'a'.repeat(64)]) {
+      writeFileSync(bootstrap, `globalThis.fetch = async () => Response.json({error:${JSON.stringify(reason)}},{status:400});`);
+      const res = spawnSync(process.execPath, ['--import', bootstrap, path.join(scripts, 'promote-release.mjs')], { env: { ...process.env, ...context, GITHUB_REF: 'refs/heads/main', THEME_PUBLISH_TOKEN: 'a'.repeat(64), ARTIFACT_SHA: 'b'.repeat(40) }, encoding: 'utf8' });
+      assert.notEqual(res.status, 0);
+      if (reason === 'Invalid validation credential') assert.match(res.stderr, /400; validation-credential-format/);
+      assert.ok(!(res.stdout+res.stderr).includes('a'.repeat(64)), 'credential-bearing response must never be printed');
+    }
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});

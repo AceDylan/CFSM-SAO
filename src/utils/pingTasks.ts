@@ -39,6 +39,18 @@ export function resolveDefaultHomepagePingTaskId(value: unknown): number {
  */
 export const DEFAULT_HOMEPAGE_MULTI_PING_TASK_IDS: readonly number[] = [1, 2, 3];
 
+/** Keep preferred active slots, then fill only from effective backend slots. */
+export function resolveEnabledPingTaskIds(
+  preferred: readonly number[],
+  enabled?: readonly number[],
+): readonly number[] {
+  if (enabled === undefined) return preferred;
+  return [...new Set([
+    ...preferred.filter((id) => enabled.includes(id)),
+    ...enabled,
+  ])].slice(0, preferred.length);
+}
+
 const invertedBindingsCache = new WeakMap<HomepagePingTaskBindings, Map<string, number>>();
 
 function parseTaskId(taskId: string) {

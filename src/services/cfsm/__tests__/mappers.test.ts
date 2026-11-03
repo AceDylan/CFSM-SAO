@@ -26,6 +26,15 @@ const MIB = 1024 * 1024;
 const GIB = 1024 ** 3;
 const NOW = Date.parse("2026-07-16T12:00:00Z");
 
+describe("effective backend ping slots", () => {
+  it("uses current configuration even with historical values for stopped probes", () => {
+    const info = toNodeInfo(server({ ping_nodes_enabled: { custom_ct: false, custom_bd: true, node_4: true }, ping_ct: 23 }));
+    expect(info.enabled_ping_task_ids).toEqual([4, 8]);
+    expect(toNodeInfo(server({ ping_nodes_enabled: {} })).enabled_ping_task_ids).toEqual([]);
+    expect(toNodeInfo(server()).enabled_ping_task_ids).toBeUndefined();
+  });
+});
+
 function server(overrides: Record<string, unknown> = {}): CfsmServer {
   return CfsmServerSchema.parse({
     id: "node-a",

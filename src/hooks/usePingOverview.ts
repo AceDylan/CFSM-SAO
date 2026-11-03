@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useMinuteClock } from "@/hooks/useClock";
+import { useNodeMeta } from "@/hooks/useNode";
 import { useCarrierNames } from "@/hooks/usePublicConfig";
 import { useThemeSettings } from "@/hooks/useThemeSettings";
 import {
@@ -40,6 +41,7 @@ import {
   invertHomepagePingTaskBindings,
   resolveDefaultHomepagePingTaskId,
   isHomepageMultiPingConfigured,
+  resolveEnabledPingTaskIds,
 } from "@/utils/pingTasks";
 import type { NodeViewMode } from "@/utils/themeSettings";
 
@@ -307,13 +309,15 @@ export function withLiveLatency(
  */
 export function useSelectedTaskId(uuid: string): number {
   const { homepagePingBindings, homepageDefaultPingTaskId } = useThemeSettings();
+  const enabled = useNodeMeta(uuid)?.enabled_ping_task_ids;
   return useMemo(() => {
     const byClient = invertHomepagePingTaskBindings(homepagePingBindings);
-    return (
+    const preferred = (
       byClient.get(uuid) ??
       resolveDefaultHomepagePingTaskId(homepageDefaultPingTaskId)
     );
-  }, [homepageDefaultPingTaskId, homepagePingBindings, uuid]);
+    return resolveEnabledPingTaskIds([preferred], enabled)[0] ?? 0;
+  }, [enabled, homepageDefaultPingTaskId, homepagePingBindings, uuid]);
 }
 
 /**
@@ -378,13 +382,17 @@ export function useNodeMultiPingTaskIds(uuid: string): readonly number[] {
   const { homepageMultiPingTaskIds, homepagePingLineOverrides } = useThemeSettings();
   const siteOverrides = nodePingLineOverrides(homepagePingLineOverrides, uuid);
   const localOverrides = useNodePingLineOverrides(uuid);
+  const enabled = useNodeMeta(uuid)?.enabled_ping_task_ids;
   return useMemo(
     () =>
-      resolveNodePingLineTaskIds(
-        resolveNodePingLineTaskIds(homepageMultiPingTaskIds, siteOverrides),
-        localOverrides,
+      resolveEnabledPingTaskIds(
+        resolveNodePingLineTaskIds(
+          resolveNodePingLineTaskIds(homepageMultiPingTaskIds, siteOverrides),
+          localOverrides,
+        ),
+        enabled,
       ),
-    [homepageMultiPingTaskIds, localOverrides, siteOverrides],
+    [enabled, homepageMultiPingTaskIds, localOverrides, siteOverrides],
   );
 }
 
@@ -412,7 +420,12 @@ export function listAvailablePingTaskIds(
 }
 
 export function useAvailablePingTaskIds(uuid: string, enabled = true): readonly number[] {
-  return listAvailablePingTaskIds(usePingSamples(uuid, enabled));
+  const samples = usePingSamples(uuid, enabled);
+  const effective = useNodeMeta(uuid)?.enabled_ping_task_ids;
+  return useMemo(() => {
+    const available = listAvailablePingTaskIds(samples);
+    return effective === undefined ? available : available.filter((id) => effective.includes(id));
+  }, [effective, samples]);
 }
 
 /**

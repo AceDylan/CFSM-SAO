@@ -306,6 +306,11 @@ export function toNodeInfo(server: CfsmServer): NodeInfo {
   const gpus = parseGpuInfo(server.gpu_info);
   return {
     uuid: server.id,
+    enabled_ping_task_ids: server.ping_nodes_enabled === undefined
+      ? undefined
+      : CARRIER_TASKS.filter((task) => server.ping_nodes_enabled?.[
+          task.key.startsWith("node_") ? task.key : `custom_${task.key}`
+        ] === true).map((task) => task.id),
     name: server.name,
     group: server.server_group,
     region: server.region,

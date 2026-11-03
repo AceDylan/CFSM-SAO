@@ -1,4 +1,18 @@
 import { describe, expect, it } from "vitest";
+import { resolveEnabledPingTaskIds } from "@/utils/pingTasks";
+
+describe("effective backend ping slots", () => {
+  it("shows fewer lines rather than padding with stopped slots", () => {
+    expect(resolveEnabledPingTaskIds([1, 2, 3], [4])).toEqual([4]);
+    expect(resolveEnabledPingTaskIds([1, 2, 3], [3, 4])).toEqual([3, 4]);
+    expect(resolveEnabledPingTaskIds([1, 2, 3], [])).toEqual([]);
+  });
+  it("preserves active preferences and replaces a stopped single selection", () => {
+    expect(resolveEnabledPingTaskIds([3, 1], [1, 2, 3, 4])).toEqual([3, 1]);
+    expect(resolveEnabledPingTaskIds([1], [4])).toEqual([4]);
+    expect(resolveEnabledPingTaskIds([1, 2], undefined)).toEqual([1, 2]);
+  });
+});
 import { CARRIER_TASKS } from "@/services/cfsm/mappers";
 import {
   DEFAULT_HOMEPAGE_PING_TASK_ID,

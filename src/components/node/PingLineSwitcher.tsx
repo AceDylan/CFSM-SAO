@@ -13,6 +13,7 @@ import { Check, RotateCcw } from "lucide-react";
 import {
   useAvailablePingTaskIds,
   useNodePingLineOverrides,
+  useNodeMultiPingTaskIds,
 } from "@/hooks/usePingOverview";
 import { useCarrierNames } from "@/hooks/usePublicConfig";
 import { useThemeSettings } from "@/hooks/useThemeSettings";
@@ -111,7 +112,8 @@ function PingLineMenu({
     homepageMultiPingTaskIds,
     nodePingLineOverrides(homepagePingLineOverrides, uuid),
   );
-  const displayed = resolveNodePingLineTaskIds(nodeDefault, overrides);
+  const preferred = resolveNodePingLineTaskIds(nodeDefault, overrides);
+  const displayed = useNodeMultiPingTaskIds(uuid);
   const currentTaskId = displayed[slot];
   // 有数据的线路才列（后端对没配探测目标的槽位下发 false，换过去只会是一行「无样本」）；
   // 正在显示的几条哪怕暂时没数据也列上，否则找不到当前选中项，也没法把它换回来。
@@ -119,7 +121,7 @@ function PingLineMenu({
     (task) => available.includes(task.id) || displayed.includes(task.id),
   ).map((task) => task.id);
   // 没有生效的本机覆盖时 resolve 原样返回默认那份数组，引用不同就说明本机换过。
-  const customized = displayed !== nodeDefault;
+  const customized = preferred !== nodeDefault;
 
   useLayoutEffect(() => {
     const trigger = triggerRef.current;

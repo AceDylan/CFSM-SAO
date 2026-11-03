@@ -147,6 +147,7 @@ export const CfsmServerSchema = z
     loss_node_2: probeMetricValue,
     loss_node_3: probeMetricValue,
     loss_node_4: probeMetricValue,
+    ping_nodes_enabled: z.record(z.boolean()).optional(),
     // Workers 2.8.3 Beta2 起下发的一小时探测窗口；旧版本没有这两个字段。
     ping: z.array(LatencyPointSchema).optional(),
     loss: z.array(LatencyPointSchema).optional(),
@@ -363,6 +364,8 @@ export type HistoryRow = z.output<typeof HistoryRowSchema>;
 /** 节点静态信息。字节口径已在 mapper 中统一换算，UI 层不再关心后端单位。 */
 export interface NodeInfo {
   uuid: string;
+  /** Effective backend probe slots; absent on older Workers, empty when all are stopped. */
+  enabled_ping_task_ids?: readonly number[];
   name: string;
   group: string;
   region: string;

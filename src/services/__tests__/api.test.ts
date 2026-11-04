@@ -261,11 +261,19 @@ describe("getPublic", () => {
 });
 
 describe("getMe", () => {
-  it("reports a logged-out visitor without hitting the network", async () => {
+  it("reports a visitor without a session as logged out", async () => {
+    fetchMock.mockImplementation(jsonReply({ authorization: false, site_title: "S" }));
+
+    expect((await getMe()).logged_in).toBe(false);
+  });
+
+  it("recognises a cookie session that has no local token", async () => {
+    fetchMock.mockImplementation(jsonReply({ authorization: true, site_title: "S" }));
+
     const me = await getMe();
 
-    expect(me.logged_in).toBe(false);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(me.logged_in).toBe(true);
+    expect(me.username).toBe("Admin");
   });
 
   it("derives the login state and custom nickname from storage and config", async () => {

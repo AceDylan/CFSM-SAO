@@ -258,12 +258,10 @@ export function getInitialAuth(): Me {
 
 /**
  * CF-Server-Monitor 没有 `/api/me`：登录态由 `/api/config` 的 `authorization` 决定。
+ * 登录可能只有 HttpOnly Cookie（Hub 免登录、后台登录后），本地没有 JWT 不代表没登录。
  */
 export async function getMe(options?: RequestOptions): Promise<Me> {
   const token = getJwtToken();
-  if (!token) {
-    return { logged_in: false, username: "", uuid: "" };
-  }
   const config = await getSiteConfig(options);
   if (!config.authorization) {
     return { logged_in: false, username: "", uuid: "" };
@@ -281,7 +279,8 @@ export async function getMe(options?: RequestOptions): Promise<Me> {
     }
   }
 
-  const username = resolveAuthUsername(token);
+  // Cookie 会话没有本地 JWT，昵称同样优先读缓存。
+  const username = resolveAuthUsername(token || "cookie-session");
 
   return {
     logged_in: true,

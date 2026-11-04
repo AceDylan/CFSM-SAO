@@ -3830,3 +3830,13 @@
   border-color: var(--accent-500, #f59e0b);
   background: color-mix(in srgb, var(--accent-500, #f59e0b) 14%, transparent);
 }
+
+/* 内嵌在 Bookmark Hub 里：外壳由 Hub 提供，这里只留内容。 */
+:root[data-embed="hub"] .mao-top-nav-bar,
+:root[data-embed="hub"] .home-site-footer {
+  display: none;
+}
+
+:root[data-embed="hub"] .app-main {
+  padding-top: 12px;
+}

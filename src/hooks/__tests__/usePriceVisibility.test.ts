@@ -2,10 +2,9 @@ import { describe, expect, it } from "vitest";
 import { resolvePriceVisibility } from "@/hooks/usePriceVisibility";
 
 describe("resolvePriceVisibility", () => {
-  it("strictly follows showPriceForGuests by default (hides price when disabled)", () => {
-    // 默认基准严格遵守「向访客公开价格与资产」配置：关闭时默认均隐藏，彻底杜绝价格默认泄露
+    it("shows prices to logged-in owners by default and follows showPriceForGuests for guests", () => {
     expect(resolvePriceVisibility(false, false, null)).toBe(false);
-    expect(resolvePriceVisibility(true, false, null)).toBe(false);
+    expect(resolvePriceVisibility(true, false, null)).toBe(true);
 
     // 开启向访客公开时，默认均显示
     expect(resolvePriceVisibility(false, true, null)).toBe(true);
@@ -33,8 +32,8 @@ describe("resolvePriceVisibility", () => {
     const guestHidden = resolvePriceVisibility(false, false, null);
     expect(guestHidden ? rawPrice : null).toBeNull();
 
-    const adminDefaultHidden = resolvePriceVisibility(true, false, null);
-    expect(adminDefaultHidden ? rawPrice : null).toBeNull();
+    const ownerDefault = resolvePriceVisibility(true, false, null);
+    expect(ownerDefault ? rawPrice : null).toBe(rawPrice);
 
     // 管理员临时展开
     const adminVisible = resolvePriceVisibility(true, false, "visible");

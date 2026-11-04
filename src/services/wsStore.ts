@@ -1140,8 +1140,11 @@ let sessionTimer: number | null = null;
 /** 连接到了时限：已断开，等用户点「继续」。期间不重连、不轮询，切回前台也不会静默重连。 */
 let sessionExpired = false;
 
+/** 内嵌在 Hub 里且用户切到了别的标签：框还在，但没有人在看。 */
+let hostPaused = false;
+
 function realtimePaused(): boolean {
-  return hiddenPaused || sessionExpired;
+  return hiddenPaused || sessionExpired || hostPaused;
 }
 
 function setRealtimeConnected(next: boolean) {
@@ -1296,6 +1299,18 @@ function handleVisibilityChange() {
   hiddenPaused = false;
   // 因为连接到时限而暂停的，仍等用户点「继续」—— resumeRealtime 里的 realtimePaused() 会挡住。
   resumeRealtime();
+}
+
+/**
+ * Hub 切走 / 切回本标签时调用。框被隐藏时 document.hidden 不会变，
+ * 不暂停的话探针会一直保持高频上报。
+ */
+export function setRealtimeHostPaused(paused: boolean) {
+  if (hostPaused === paused) return;
+  hostPaused = paused;
+  if (!started) return;
+  if (paused) suspendRealtime();
+  else resumeRealtime();
 }
 
 function expireRealtimeSession() {

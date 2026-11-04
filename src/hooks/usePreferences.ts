@@ -225,6 +225,12 @@ function getSnapshot() {
   return snapshot;
 }
 
+/** 内嵌时跟随外层 Hub：只改当前页面，不写入独立访问本站时用的偏好。 */
+export function applyEmbeddedAppearance(appearance: ResolvedAppearance) {
+  hasExplicitAppearancePreference = true;
+  commit({ appearance });
+}
+
 export function usePreferences() {
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const themeSettings = useThemeSettings();

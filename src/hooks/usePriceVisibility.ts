@@ -16,10 +16,9 @@ export function resolvePriceVisibility(
   if (override === "hidden") return false;
   if (override === "visible") return loggedIn || showPriceForGuests;
 
-  // 默认状态（未设置临时覆盖）：严格以「向访客公开价格与资产」为准。
-  // 未勾选向访客公开时，默认全部隐藏价格与资产脱敏，彻底杜绝未登录访客默认泄露价格标签。
-  // 管理员可随时通过右上角快捷按钮一键临时展开查看。
-  return showPriceForGuests;
+  // 默认状态（未设置临时覆盖）：登录的站长直接可见；访客看「向访客公开价格与资产」设置。
+  // 站长可随时通过右上角快捷按钮临时隐藏。
+  return loggedIn || showPriceForGuests;
 }
 
 function readStoredOverride(): PriceVisibilityOverride {

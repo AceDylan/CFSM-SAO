@@ -222,6 +222,38 @@ describe("页面进后台", () => {
   });
 });
 
+describe("内嵌时 Hub 切到别的标签", () => {
+  it("disconnects at once, stays quiet, and survives a visibility change until the Hub returns", async () => {
+    const store = await loadStore();
+    const release = store.retainStore();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.connections).toHaveLength(1);
+
+    store.setRealtimeHostPaused(true);
+    expect(mocks.connections[0]!.closed).toBe(true);
+
+    const syncsWhilePaused = syncCount();
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    expect(syncCount()).toBe(syncsWhilePaused);
+
+    // 整个页面隐藏再回来，不能绕过 Hub 的暂停。
+    setHidden(true);
+    await vi.advanceTimersByTimeAsync(store.HIDDEN_REALTIME_PAUSE_DELAY_MS);
+    setHidden(false);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.connections).toHaveLength(1);
+
+    store.setRealtimeHostPaused(false);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.connections).toHaveLength(2);
+    expect(mocks.connections[1]!.closed).toBe(false);
+    expect(syncCount()).toBe(syncsWhilePaused + 1);
+
+    release();
+    await vi.advanceTimersByTimeAsync(0);
+  });
+});
+
 describe("实时连接时限（frontend_ws_timeout_minutes）", () => {
   it("disconnects at the limit and stays paused, even across a tab switch, until the user continues", async () => {
     const store = await loadStore();

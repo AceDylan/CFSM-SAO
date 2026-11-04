@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Lock, WifiOff, RotateCw, ArrowRight } from "lucide-react";
 import { TurnstileGate } from "./TurnstileGate";
@@ -13,6 +13,7 @@ import { useTurnstileVerificationRequired } from "@/hooks/useTurnstileVerificati
 import { useMetricColorsSync } from "@/hooks/useMetricColors";
 import { useNodeStoreStatus } from "@/hooks/useNode";
 import { getAdminUrl } from "@/services/cfsm/config";
+import { isHubEmbed, notifyHubReady, requestHubReauth } from "@/services/hubEmbed";
 import { HomeSkeleton } from "./HomeSkeleton";
 export function AppShell() {
   useAppearance();
@@ -66,6 +67,11 @@ export function AppShell() {
   const isCheckingHomeData =
     canHydrateHome && !homeStoreStatus.hydrated && !homeStoreStatus.nodeInfoError;
   const isCheckingShell = isCheckingAccess || isCheckingHomeData;
+
+  useEffect(() => {
+    if (isPrivateVisitor) requestHubReauth();
+    else if (!isCheckingShell) notifyHubReady();
+  }, [isCheckingShell, isPrivateVisitor]);
 
   return (
     <div className="relative flex min-h-screen flex-col">
@@ -193,8 +199,7 @@ function PrivateSiteGate() {
         <div className="access-error-actions">
           <a
             href={getAdminUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...(isHubEmbed() ? {} : { target: "_blank", rel: "noopener noreferrer" })}
             className="access-error-refresh-btn"
           >
             <span>前往登录</span>

@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { GitBranch, ExternalLink } from "lucide-react";
-import clsx from "clsx";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
-import { useThemeUpdate } from "@/hooks/useThemeUpdate";
+import { THEME_REPO_URL, THEME_VERSION } from "@/utils/themeInfo";
 
 const CFSM_VERSION_STORAGE_KEY = "cfsmtheme:version";
 
 export function SiteFooter() {
   const { data: publicConfig } = usePublicConfig();
   const rawVersion = publicConfig?.version?.trim();
-  const { hasUpdate, currentVersion, latestVersion, releaseUrl, toggleMockUpdate } = useThemeUpdate();
 
   // 缓存与持久化 CFSM 版本号，避免刷新时因网络异步返回导致胶囊宽度从短变长闪烁
   const [cachedVersion, setCachedVersion] = useState<string>(() => {
@@ -38,13 +36,7 @@ export function SiteFooter() {
       <div className="home-footer-capsule">
         {/* 左侧呼吸点与 CFSM 探针标识及版本 */}
         <div className="home-footer-brand">
-          <button
-            type="button"
-            className={clsx("home-footer-pulse", hasUpdate && "has-update")}
-            title={hasUpdate ? `发现新版本 ${latestVersion} (点击可切换预览状态)` : "状态正常 (点击可切换更新预览)"}
-            onClick={toggleMockUpdate}
-            aria-label="版本状态指示点"
-          />
+          <span className="home-footer-pulse" aria-hidden="true" />
           <a
             href="https://github.com/huilang-me/CF-Server-Monitor/"
             target="_blank"
@@ -68,40 +60,16 @@ export function SiteFooter() {
 
         <span className="home-footer-divider" aria-hidden="true" />
 
-        {/* 主题版本芯片：若有更新则图标与版本号作为一体同步上下翻滚 */}
-        {hasUpdate ? (
-          <a
-            href={releaseUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="home-footer-version"
-            title={`当前版本 ${currentVersion} · 发现新版本 ${latestVersion} (点击前往 GitHub 查看更新)`}
-          >
-            <span className="home-footer-ticker-viewport">
-              <span className="home-footer-ticker-track">
-                <span className="home-footer-ticker-item current">
-                  <GitBranch size={10} className="home-footer-branch-icon" aria-hidden="true" />
-                  <span>{currentVersion}</span>
-                </span>
-                <span className="home-footer-ticker-item latest">
-                  <GitBranch size={10} className="home-footer-branch-icon" aria-hidden="true" />
-                  <span>{latestVersion}</span>
-                </span>
-              </span>
-            </span>
-          </a>
-        ) : (
-          <span className="home-footer-version" title={`主题版本 ${currentVersion}`}>
-            <GitBranch size={10} className="home-footer-branch-icon" aria-hidden="true" />
-            <span>{currentVersion}</span>
-          </span>
-        )}
+        <span className="home-footer-version" title={`主题版本 ${THEME_VERSION}`}>
+          <GitBranch size={10} className="home-footer-branch-icon" aria-hidden="true" />
+          <span>{THEME_VERSION}</span>
+        </span>
 
         <span className="home-footer-divider" aria-hidden="true" />
 
         {/* GitHub 交互链接 */}
         <a
-          href="https://github.com/WAOR/CFSM-SAO"
+          href={THEME_REPO_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="home-footer-github"

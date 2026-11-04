@@ -61,7 +61,7 @@ import { useHomeNodeSummaries } from "@/hooks/useNode";
 import { getNodeMetricsSnapshot } from "@/services/wsStore";
 import { useCarrierNames, usePublicConfig } from "@/hooks/usePublicConfig";
 import { useHourlyClock } from "@/hooks/useClock";
-import { useThemeUpdate } from "@/hooks/useThemeUpdate";
+import { THEME_REPO_URL, THEME_VERSION } from "@/utils/themeInfo";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useAllPingLineOverrides } from "@/hooks/usePingOverview";
 import {
@@ -170,28 +170,28 @@ const BANDWIDTH_TIERS: readonly BandwidthTierItem[] = [
     level: 0,
     tierTitle: "一阶 · 闲置",
     threshold: "≤ 1 Mbps",
-    defaultLabel: "IDLE",
+    defaultLabel: "闲置",
     desc: "极低吞吐或待机心跳",
   },
   {
     level: 1,
     tierTitle: "二阶 · 轻载",
     threshold: "≤ 10 Mbps",
-    defaultLabel: "LIGHT",
+    defaultLabel: "轻载",
     desc: "平稳轻度网络流量",
   },
   {
     level: 2,
     tierTitle: "三阶 · 活跃",
     threshold: "≤ 100 Mbps",
-    defaultLabel: "ACTIVE",
+    defaultLabel: "活跃",
     desc: "节点负载持续运转",
   },
   {
     level: 3,
     tierTitle: "四阶 · 激增",
     threshold: "> 100 Mbps",
-    defaultLabel: "SURGE",
+    defaultLabel: "高峰",
     desc: "高吞吐或满载跑峰",
   },
 ] as const;
@@ -1101,10 +1101,10 @@ const PROJECT_REPOS = [
     id: "cfsm",
     name: "CFSM SAO",
     tag: "Cloudflare Server Monitor",
-    repo: "WAOR/CFSM-SAO",
-    url: "https://github.com/WAOR/CFSM-SAO",
-    issuesUrl: "https://github.com/WAOR/CFSM-SAO/issues",
-    newIssueUrl: "https://github.com/WAOR/CFSM-SAO/issues/new",
+    repo: "AceDylan/CFSM-SAO",
+    url: THEME_REPO_URL,
+    issuesUrl: `${THEME_REPO_URL}/issues`,
+    newIssueUrl: `${THEME_REPO_URL}/issues/new`,
     desc: "适配 CFSM (Cloudflare Server Monitor) 探针的 SAO 风格主题。",
     isCurrent: true,
   },
@@ -1166,7 +1166,6 @@ function SiteSyncIndicator({
 
 export function ThemeManage() {
   const now = useHourlyClock();
-  const { currentVersion } = useThemeUpdate();
   const { setAppearance } = usePreferences();
   const {
     data: config,
@@ -3022,7 +3021,7 @@ export function ThemeManage() {
                         CFSM SAO Theme
                       </span>
                       <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-(--hairline) bg-(--bg-card) text-(--accent-500)">
-                        {currentVersion}
+                        {THEME_VERSION}
                       </span>
                     </div>
                     <p className="text-xs text-(--text-muted)">

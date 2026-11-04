@@ -183,7 +183,7 @@ export function useNodeCardModel(
   const metaModel = useMemo(() => {
     if (!meta) return null;
     const tags = parseTags(meta.tags);
-    const group = showCardGroup ? meta.group : undefined;
+    const group = showCardGroup && meta.group?.trim().toLowerCase() !== "default" ? meta.group : undefined;
     const subtitleParts = [group, meta.public_remark]
       .map((part) => part?.trim())
       .filter((part): part is string => Boolean(part));

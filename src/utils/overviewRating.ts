@@ -8,7 +8,7 @@ export interface OverviewRating {
 const MBPS_IN_BYTES_PER_SECOND = 1_000_000 / 8;
 
 const DEFAULT_LABELS: Record<OverviewRatingKind, readonly string[]> = {
-  bandwidth: ["IDLE", "LIGHT", "ACTIVE", "SURGE"],
+  bandwidth: ["闲置", "轻载", "活跃", "高峰"],
 };
 
 export function getDefaultOverviewRatingLabelText(kind: OverviewRatingKind = "bandwidth") {

@@ -12,7 +12,7 @@ import { fetchWithTimeout } from "@/utils/abort";
  */
 
 export const THEME_RELEASE_INDEX_URL =
-  "https://raw.githubusercontent.com/WAOR/CFSM-SAO/dist/index.html";
+  "https://raw.githubusercontent.com/AceDylan/CFSM-SAO/dist/index.html";
 
 const LATEST_THEME_CACHE_KEY = "cfsm-sao:theme-latest-version";
 const LATEST_THEME_TTL_MS = 12 * 60 * 60 * 1000;

@@ -6,25 +6,25 @@ import {
 
 describe("overview ratings", () => {
   it("rates bandwidth on native byte inputs", () => {
-    // 672 Kbps <= 1 Mbps -> level 0 (IDLE)
+    // 672 Kbps <= 1 Mbps -> level 0 (闲置)
     expect(getOverviewRating({ kind: "bandwidth", value: (672 * 1024) / 8 })).toEqual({
       level: 0,
-      label: "IDLE",
+      label: "闲置",
     });
-    // 5 Mbps <= 10 Mbps -> level 1 (LIGHT)
+    // 5 Mbps <= 10 Mbps -> level 1 (轻载)
     expect(getOverviewRating({ kind: "bandwidth", value: (5 * 1_000_000) / 8 })).toEqual({
       level: 1,
-      label: "LIGHT",
+      label: "轻载",
     });
-    // 50 Mbps <= 100 Mbps -> level 2 (ACTIVE)
+    // 50 Mbps <= 100 Mbps -> level 2 (活跃)
     expect(getOverviewRating({ kind: "bandwidth", value: (50 * 1_000_000) / 8 })).toEqual({
       level: 2,
-      label: "ACTIVE",
+      label: "活跃",
     });
-    // 150 Mbps > 100 Mbps -> level 3 (SURGE)
+    // 150 Mbps > 100 Mbps -> level 3 (高峰)
     expect(getOverviewRating({ kind: "bandwidth", value: (150 * 1_000_000) / 8 })).toEqual({
       level: 3,
-      label: "SURGE",
+      label: "高峰",
     });
   });
 
@@ -54,14 +54,14 @@ describe("overview ratings", () => {
     expect(normalizeOverviewRatingLabels("bandwidth", "微量,平稳")).toEqual([
       "微量",
       "平稳",
-      "ACTIVE",
-      "SURGE",
+      "活跃",
+      "高峰",
     ]);
     expect(normalizeOverviewRatingLabels("bandwidth", "微量,,高载,")).toEqual([
       "微量",
-      "LIGHT",
+      "轻载",
       "高载",
-      "SURGE",
+      "高峰",
     ]);
   });
 });

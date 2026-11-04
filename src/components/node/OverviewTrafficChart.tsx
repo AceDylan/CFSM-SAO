@@ -18,6 +18,11 @@ interface HoverInfo {
 
 const MAX_HISTORY_POINTS = 16;
 
+export function appendTrafficPoint(history: SingleTrafficPoint[], point: SingleTrafficPoint) {
+  history.push(point);
+  if (history.length > MAX_HISTORY_POINTS) history.shift();
+}
+
 function formatPointTime(timeMs: number): string {
   const d = new Date(timeMs);
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
@@ -162,10 +167,12 @@ function SingleTrafficCard({
   gradientBottom,
   haloRgba,
   isDark = true,
+  hasData,
 }: {
   title: string;
   direction: "up" | "down";
   rate: number;
+  hasData: boolean;
   color: string;
   gradientTop: string;
   gradientBottom: string;
@@ -180,24 +187,11 @@ function SingleTrafficCard({
 
   hoverIndexRef.current = hoverInfo?.index ?? null;
 
-  // 记录滚动历史点
+  // 只记录真实样本；首批指标到达前的占位 0 不入曲线，也不伪造开屏历史。
   useEffect(() => {
-    const now = Date.now();
-    const history = historyRef.current;
-    if (history.length === 0) {
-      // 初始填充平滑历史点
-      for (let i = 11; i >= 1; i--) {
-        history.push({
-          time: now - i * 1500,
-          rate: Math.max(0, rate * (0.88 + Math.random() * 0.24)),
-        });
-      }
-    }
-    history.push({ time: now, rate });
-    if (history.length > MAX_HISTORY_POINTS) {
-      history.shift();
-    }
-  }, [rate]);
+    if (!hasData) return;
+    appendTrafficPoint(historyRef.current, { time: Date.now(), rate });
+  }, [hasData, rate]);
 
   // Canvas 绘制曲线与波形函数
   const draw = useCallback(() => {
@@ -227,14 +221,7 @@ function SingleTrafficCard({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    const history = historyRef.current;
-    const points =
-      history.length > 1
-        ? history
-        : [
-            { time: Date.now() - 2000, rate: 0 },
-            { time: Date.now(), rate },
-          ];
+    const points = historyRef.current;
 
     // 动态计算当前区间的最高速率并对齐整值刻度
     let peakRate = 0;
@@ -274,6 +261,8 @@ function SingleTrafficCard({
     }
 
     ctx.setLineDash([]);
+
+    if (points.length === 0) return;
 
     // 绘制 X 轴时间刻度（首尾两个时间点）
     ctx.textAlign = "center";
@@ -377,13 +366,13 @@ function SingleTrafficCard({
         ctx.stroke();
       });
     }
-  }, [color, gradientBottom, gradientTop, haloRgba, isDark, rate]);
+  }, [color, gradientBottom, gradientTop, haloRgba, isDark]);
 
   // 当依赖更新时立即重绘
   useEffect(() => {
     const animId = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animId);
-  }, [draw]);
+  }, [draw, hasData, rate]);
 
   // 监听容器与视口尺寸变化，自适应重绘，杜绝任何桌面端与移动端切换时的拉伸形变
   useEffect(() => {
@@ -534,6 +523,10 @@ export function OverviewTrafficChart({
   const activeTheme = propColorTheme ?? themeSettings.matrixColorTheme ?? "default";
   const styles = getTrafficChartThemeStyles(activeTheme, isDark);
   const totalRate = formatByteRate(netUp + netDown);
+  // 全站合计首次大于 0 才算收到真实指标；之后的 0 是真实空闲，照常记录。
+  const hasDataRef = useRef(false);
+  if (netUp + netDown > 0) hasDataRef.current = true;
+  const hasData = hasDataRef.current;
 
   return (
     <div className="mao-progress-section mao-network-section">
@@ -553,6 +546,7 @@ export function OverviewTrafficChart({
           title="上行网络"
           direction="up"
           rate={netUp}
+          hasData={hasData}
           color={styles.up.color}
           gradientTop={styles.up.gradientTop}
           gradientBottom={styles.up.gradientBottom}
@@ -563,6 +557,7 @@ export function OverviewTrafficChart({
           title="下行网络"
           direction="down"
           rate={netDown}
+          hasData={hasData}
           color={styles.down.color}
           gradientTop={styles.down.gradientTop}
           gradientBottom={styles.down.gradientBottom}

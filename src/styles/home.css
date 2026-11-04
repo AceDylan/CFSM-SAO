@@ -3599,6 +3599,43 @@
   }
 }
 
+/* 手机首屏：指标三列、去掉重复说明、曲线降高，让服务器卡片更早进入视野。 */
+@media (max-width: 560px) {
+  .mao-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px;
+  }
+
+  .mao-stat-card {
+    min-height: 0;
+    padding: 9px 10px;
+    border-radius: 12px;
+  }
+
+  .mao-stat-card .mao-stat-value {
+    font-size: 15px;
+    margin: 5px 0 0;
+  }
+
+  .mao-stat-card .mao-stat-label {
+    font-size: 11px;
+  }
+
+  .mao-stat-card .mao-stat-caption {
+    display: none;
+  }
+
+  .mao-hero-subtitle,
+  .mao-section-sub,
+  .mao-progress-subtitle {
+    display: none;
+  }
+
+  .mao-realtime-chart-canvas-wrap {
+    height: 60px;
+  }
+}
+
 /* 开屏点阵图案交互绘制器 */
 .mao-pattern-editor {
   margin-top: 10px;

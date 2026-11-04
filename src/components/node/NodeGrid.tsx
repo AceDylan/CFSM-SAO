@@ -1018,6 +1018,7 @@ export function NodeGrid() {
   const showHomeOverview = themeSettings.isReady && themeSettings.showHomeOverview;
   const hasNodes = visibleMeta.length > 0;
   const loggedIn = Boolean(me?.logged_in);
+  const { isPriceVisible } = usePriceVisibility();
   const canAccessAssets = loggedIn || themeSettings.showPriceForGuests;
   // 资产总值卡片默认保持开启（展示与访客保密统一由 showPriceForGuests 控制）
   const showAssetCard = showHomeOverview && hasNodes;
@@ -1052,7 +1053,8 @@ export function NodeGrid() {
     initialData: () => readCachedExchangeRates(themeSettings.costRateApiUrl, true) ?? undefined,
     staleTime: 60 * 60 * 1000,
     // 「价格」排序也要汇率换算月化价,即便没显示资产卡也得拉一次;但空列表无需拉。
-    enabled: (costNeeded || sortField === "price") && hasNodes,
+    // 价格不可见时结果用不上，不向第三方汇率接口发请求。
+    enabled: isPriceVisible && (costNeeded || sortField === "price") && hasNodes,
     retry: 1,
   });
   const costSummary = useMemo(
@@ -1172,7 +1174,7 @@ export function NodeGrid() {
     [orderedUuids, mode],
   );
   const showGroupTabs =
-    themeSettings.isReady && themeSettings.showGroupTabs && groupOptions.length > 0;
+    themeSettings.isReady && themeSettings.showGroupTabs && groupOptions.length > 1;
   const showHomeSort = sortEnabled && visibleNodes.length > 1;
   // 地区栏:只有一个地区时筛选无意义,>1 才显示。
   const showRegionBar =

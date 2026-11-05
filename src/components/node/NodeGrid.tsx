@@ -11,6 +11,7 @@ import {
 import { Flag } from "@/components/ui/Flag";
 import { AssetEntry, OverviewStatCard } from "./OverviewStatCard";
 import { DomainWatchCard } from "./DomainWatchCard";
+import { ResourcePeaks } from "./ResourcePeaks";
 import { HubCore } from "@/components/shell/HubCore";
 import { DraggableCostBall } from "@/components/node/DraggableCostBall";
 import { ClusterHeatmap } from "./ClusterHeatmap";
@@ -403,9 +404,11 @@ function HomeOverviewCards({
                 <span>集群状态</span>
               </h3>
               <p className="mao-progress-subtitle">
-                {clusterOverviewMode === "classic"
-                  ? "服务器在线率与实时网络吞吐"
-                  : "全节点实时负载与机架全景"}
+                {clusterOverviewMode !== "classic"
+                  ? "全节点实时负载与机架全景"
+                  : deck
+                    ? "资源水位与实时网络吞吐"
+                    : "服务器在线率与实时网络吞吐"}
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -431,70 +434,74 @@ function HomeOverviewCards({
           {/* 根据集群状态展示设置，分别呈现「经典布局」或「独立全屏版面」 */}
           {clusterOverviewMode === "classic" ? (
             <>
-              {/* 进度模块 1：服务器在线状态 */}
-              <div className="mao-progress-section">
-                <div className="mao-progress-section-header">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="mao-progress-big-num">{onlinePct.toFixed(0)}%</span>
-                    <span className="mao-progress-unit-label">在线率</span>
+              {/* 进度模块 1：内嵌时在线情况星核已经写了，这里看哪台最吃紧；独立打开仍是在线率 */}
+              {deck ? (
+                <ResourcePeaks nodes={visibleNodes} nameByUuid={nameByUuid} />
+              ) : (
+                <div className="mao-progress-section">
+                  <div className="mao-progress-section-header">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="mao-progress-big-num">{onlinePct.toFixed(0)}%</span>
+                      <span className="mao-progress-unit-label">在线率</span>
+                    </div>
+                    <div className="mao-progress-tag-box">
+                      <span className="mao-progress-tag-label">离线服务器</span>
+                      <span className="mao-progress-tag-val">{overview.offlineNodes} 台</span>
+                    </div>
                   </div>
-                  <div className="mao-progress-tag-box">
-                    <span className="mao-progress-tag-label">离线服务器</span>
-                    <span className="mao-progress-tag-val">{overview.offlineNodes} 台</span>
-                  </div>
-                </div>
-                {/* 节点展示：达到 51 台时切换为纯无缝一体化进度条，少于 51 台时呈现经典胶囊块 */}
-                {overview.totalNodes >= 51 ? (
-                  <div
-                    className="mao-seamless-progress"
-                    role="progressbar"
-                    aria-valuenow={Math.round(onlinePct)}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    title={`在线: ${overview.onlineNodes} 台 (${onlinePct.toFixed(1)}%) · 离线: ${overview.offlineNodes} 台`}
-                  >
+                  {/* 节点展示：达到 51 台时切换为纯无缝一体化进度条，少于 51 台时呈现经典胶囊块 */}
+                  {overview.totalNodes >= 51 ? (
                     <div
-                      className="mao-seamless-segment is-online"
-                      style={{ width: `${onlinePct}%` }}
-                    />
-                    {overview.offlineNodes > 0 && (
+                      className="mao-seamless-progress"
+                      role="progressbar"
+                      aria-valuenow={Math.round(onlinePct)}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      title={`在线: ${overview.onlineNodes} 台 (${onlinePct.toFixed(1)}%) · 离线: ${overview.offlineNodes} 台`}
+                    >
                       <div
-                        className="mao-seamless-segment is-offline"
-                        style={{
-                          width: `${(overview.offlineNodes / overview.totalNodes) * 100}%`,
-                        }}
+                        className="mao-seamless-segment is-online"
+                        style={{ width: `${onlinePct}%` }}
                       />
-                    )}
+                      {overview.offlineNodes > 0 && (
+                        <div
+                          className="mao-seamless-segment is-offline"
+                          style={{
+                            width: `${(overview.offlineNodes / overview.totalNodes) * 100}%`,
+                          }}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mao-node-blocks" role="presentation">
+                      {overview.totalNodes > 0 ? (
+                        Array.from({ length: overview.totalNodes }, (_, i) => {
+                          const isOnline = i < overview.onlineNodes;
+                          const isOffline = i >= overview.totalNodes - overview.offlineNodes;
+                          const statusClass = isOnline
+                            ? "is-online"
+                            : isOffline
+                              ? "is-offline"
+                              : "is-unknown";
+                          return (
+                            <span
+                              key={i}
+                              className={`mao-node-block ${statusClass}`}
+                              title={`服务器 ${i + 1}: ${isOnline ? "在线" : isOffline ? "离线" : "未知"}`}
+                            />
+                          );
+                        })
+                      ) : (
+                        <span className="mao-node-block is-unknown" />
+                      )}
+                    </div>
+                  )}
+                  <div className="mao-progress-section-footer">
+                    <span>在线 {overview.onlineNodes} 台</span>
+                    <span>总计 {overview.totalNodes} 台</span>
                   </div>
-                ) : (
-                  <div className="mao-node-blocks" role="presentation">
-                    {overview.totalNodes > 0 ? (
-                      Array.from({ length: overview.totalNodes }, (_, i) => {
-                        const isOnline = i < overview.onlineNodes;
-                        const isOffline = i >= overview.totalNodes - overview.offlineNodes;
-                        const statusClass = isOnline
-                          ? "is-online"
-                          : isOffline
-                            ? "is-offline"
-                            : "is-unknown";
-                        return (
-                          <span
-                            key={i}
-                            className={`mao-node-block ${statusClass}`}
-                            title={`服务器 ${i + 1}: ${isOnline ? "在线" : isOffline ? "离线" : "未知"}`}
-                          />
-                        );
-                      })
-                    ) : (
-                      <span className="mao-node-block is-unknown" />
-                    )}
-                  </div>
-                )}
-                <div className="mao-progress-section-footer">
-                  <span>在线 {overview.onlineNodes} 台</span>
-                  <span>总计 {overview.totalNodes} 台</span>
                 </div>
-              </div>
+              )}
 
               {/* 进度模块 2：实时动态网络曲线图 */}
               <OverviewTrafficChart

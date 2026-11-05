@@ -4016,11 +4016,7 @@
   margin: 0;
 }
 
-/* 集群卡片只留要紧的：在线数星核已经写了，两张曲线并排且压矮，放不下就只留读数。 */
-.mao-dashboard-hero.is-deck .mao-hero-side .mao-progress-section-footer {
-  display: none;
-}
-
+/* 集群卡片的两张曲线并排且压矮，放不下就只留读数。 */
 .mao-dashboard-hero.is-deck .mao-realtime-charts-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -4175,4 +4171,71 @@
   font-size: 11px;
   text-align: center;
   color: var(--text-tertiary);
+}
+
+/* 资源水位：CPU / 内存 / 硬盘各自最高的一台 */
+.resource-peaks-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resource-peak {
+  display: grid;
+  grid-template-columns: 30px minmax(40px, 1fr) minmax(0, 34%) 46px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+
+.resource-peak-bar {
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--text-tertiary) 18%, transparent);
+}
+
+.resource-peak-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--status-success);
+  transition: width 400ms ease;
+}
+
+.resource-peak[data-level="warning"] .resource-peak-fill {
+  background: var(--status-warning);
+}
+
+.resource-peak[data-level="critical"] .resource-peak-fill {
+  background: var(--status-error);
+}
+
+.resource-peak-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.resource-peak-pct {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-primary);
+}
+
+.resource-peak[data-level="warning"] .resource-peak-pct {
+  color: var(--status-warning);
+}
+
+.resource-peak[data-level="critical"] .resource-peak-pct {
+  color: var(--status-error);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resource-peak-fill {
+    transition: none;
+  }
 }

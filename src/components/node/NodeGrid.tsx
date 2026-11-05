@@ -9,10 +9,13 @@ import {
   X,
 } from "lucide-react";
 import { Flag } from "@/components/ui/Flag";
-import { OverviewStatCard } from "./OverviewStatCard";
+import { AssetEntry, OverviewStatCard } from "./OverviewStatCard";
+import { DomainWatchCard } from "./DomainWatchCard";
+import { HubCore } from "@/components/shell/HubCore";
 import { DraggableCostBall } from "@/components/node/DraggableCostBall";
 import { ClusterHeatmap } from "./ClusterHeatmap";
 import { useAuth } from "@/hooks/useAuth";
+import { isHubEmbed } from "@/services/hubEmbed";
 import { getLocalThemeSettings, saveLocalThemeSettings } from "@/services/themeSettingsStore";
 import {
   useAllNodeMeta,
@@ -240,6 +243,7 @@ function HomeOverviewCards({
   overviewCardOrder?: OverviewCardId[];
 }) {
   const queryClient = useQueryClient();
+  const deck = isHubEmbed();
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState("");
   const handleStartEdit = () => {
@@ -307,77 +311,84 @@ function HomeOverviewCards({
 
   return (
     <section
-      className={`mao-dashboard-hero home-overview${dense ? " is-dense" : ""}`}
+      className={`mao-dashboard-hero home-overview${dense ? " is-dense" : ""}${deck ? " is-deck" : ""}`}
       aria-label="首页总览"
       data-palette={matrixColorTheme || "default"}
     >
-      {/* 左侧主要区域：问候语 + 6 宫格指标小卡片 */}
-      <div className="mao-hero-main">
-        <div className="mao-hero-header">
-          <div className="mao-badge">
-            <Sparkles size={12} className="text-(--text-primary)" />
-            <span>监控总览</span>
-          </div>
-          <h1 className="mao-hero-greeting flex items-center gap-1.5 flex-wrap">
-            <span>{greetingInfo.greeting}，</span>
-            {isEditingName ? (
-              <span className="inline-flex items-center gap-1">
-                <input
-                  type="text"
-                  autoFocus
-                  maxLength={40}
-                  value={tempName}
-                  onChange={(e) => setTempName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSaveName();
-                    if (e.key === "Escape") setIsEditingName(false);
-                  }}
-                  placeholder="输入昵称 (如 jerry)"
-                  className="px-2 py-0.5 text-base rounded bg-(--input-bg,rgba(0,0,0,0.3)) border border-(--accent) text-(--text-primary) focus:outline-none w-36"
-                />
-                <button
-                  type="button"
-                  onClick={handleSaveName}
-                  className="p-1 rounded bg-(--accent) text-white font-medium hover:opacity-90 transition-opacity"
-                  title="保存"
-                >
-                  <Check size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingName(false)}
-                  className="p-1 rounded bg-white/10 text-(--text-muted) hover:text-(--text-primary) transition-colors"
-                  title="取消"
-                >
-                  <X size={14} />
-                </button>
-              </span>
-            ) : (
-              <span
-                className={`inline-flex items-center gap-1.5 group ${loggedIn ? "cursor-pointer" : ""}`}
-                onClick={loggedIn ? handleStartEdit : undefined}
-                title={loggedIn ? "点击快速修改管理员昵称" : undefined}
-              >
-                <DiaTextReveal text={username || "Guest"} />
-                {loggedIn && (
-                  <Pencil
-                    size={13}
-                    className="text-(--text-muted) opacity-0 group-hover:opacity-80 hover:text-(--accent) transition-all"
+      {/* Hub 内嵌：域名 · 星核 · 集群三栏（星核的接力落点也在这里）；独立打开：问候语 + 指标小卡片 */}
+      {deck ? (
+        <>
+          <DomainWatchCard />
+          <HubCore />
+        </>
+      ) : (
+        <div className="mao-hero-main">
+          <div className="mao-hero-header">
+            <div className="mao-badge">
+              <Sparkles size={12} className="text-(--text-primary)" />
+              <span>监控总览</span>
+            </div>
+            <h1 className="mao-hero-greeting flex items-center gap-1.5 flex-wrap">
+              <span>{greetingInfo.greeting}，</span>
+              {isEditingName ? (
+                <span className="inline-flex items-center gap-1">
+                  <input
+                    type="text"
+                    autoFocus
+                    maxLength={40}
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveName();
+                      if (e.key === "Escape") setIsEditingName(false);
+                    }}
+                    placeholder="输入昵称 (如 jerry)"
+                    className="px-2 py-0.5 text-base rounded bg-(--input-bg,rgba(0,0,0,0.3)) border border-(--accent) text-(--text-primary) focus:outline-none w-36"
                   />
-                )}
-              </span>
-            )}
-          </h1>
-          <p className="mao-hero-subtitle">
-            {greetingInfo.subtitle}
-          </p>
-        </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveName}
+                    className="p-1 rounded bg-(--accent) text-white font-medium hover:opacity-90 transition-opacity"
+                    title="保存"
+                  >
+                    <Check size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingName(false)}
+                    className="p-1 rounded bg-white/10 text-(--text-muted) hover:text-(--text-primary) transition-colors"
+                    title="取消"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              ) : (
+                <span
+                  className={`inline-flex items-center gap-1.5 group ${loggedIn ? "cursor-pointer" : ""}`}
+                  onClick={loggedIn ? handleStartEdit : undefined}
+                  title={loggedIn ? "点击快速修改管理员昵称" : undefined}
+                >
+                  <DiaTextReveal text={username || "Guest"} />
+                  {loggedIn && (
+                    <Pencil
+                      size={13}
+                      className="text-(--text-muted) opacity-0 group-hover:opacity-80 hover:text-(--accent) transition-all"
+                    />
+                  )}
+                </span>
+              )}
+            </h1>
+            <p className="mao-hero-subtitle">
+              {greetingInfo.subtitle}
+            </p>
+          </div>
 
-        {/* 6 宫格指标卡片 */}
-        <div className="mao-stat-grid">
-          {activeCardIds.map((cardId) => renderCard(cardId))}
+          {/* 6 宫格指标卡片 */}
+          <div className="mao-stat-grid">
+            {activeCardIds.map((cardId) => renderCard(cardId))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 右侧集群状态区域 */}
       <div className="mao-hero-side">
@@ -413,6 +424,7 @@ function HomeOverviewCards({
                   {bandwidthRating.label}
                 </span>
               )}
+              {deck && showDetailButton && <AssetEntry nodes={renewalNodes} />}
             </div>
           </div>
 
@@ -1223,6 +1235,7 @@ export function NodeGrid() {
     <>
       {showCostFloatingButton && <DraggableCostBall />}
       <HomeBrand siteName={siteName} />
+      {!showHomeOverview && isHubEmbed() && <HubCore />}
       {showHomeOverview && (
         <HomeOverviewCards
           overview={overview}

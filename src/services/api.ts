@@ -1,10 +1,12 @@
 import { z } from "zod";
 import {
   CfsmServerSchema,
+  DomainsResponseSchema,
   HistoryRowSchema,
   ServersResponseSchema,
   SiteConfigSchema,
   type CfsmServer,
+  type DomainRecord,
   type HistoryRow,
   type LoadRecordsResponse,
   type Me,
@@ -254,6 +256,17 @@ export function getInitialAuth(): Me {
     username,
     uuid: "",
   };
+}
+
+/** 域名到期列表（按到期日升序、未知日期靠后）；后端只对已登录管理员开放。 */
+export async function getDomains(options?: RequestOptions): Promise<DomainRecord[]> {
+  const { domains } = await cfsmPost(
+    "/admin/api",
+    { action: "list_domains" },
+    DomainsResponseSchema,
+    options,
+  );
+  return domains;
 }
 
 /**

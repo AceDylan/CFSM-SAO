@@ -4002,3 +4002,177 @@
     animation: none;
   }
 }
+
+/* Hub 内嵌总览：域名 · 星核 · 集群三栏，星核居中。窄屏叠成一列，星核放最上面。 */
+.mao-dashboard-hero.is-deck {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: clamp(10px, 1.6vw, 22px);
+}
+
+.mao-dashboard-hero.is-deck .hub-core {
+  align-self: center;
+  margin: 0;
+}
+
+/* 集群卡片只留要紧的：在线数星核已经写了，两张曲线并排且压矮，放不下就只留读数。 */
+.mao-dashboard-hero.is-deck .mao-hero-side .mao-progress-section-footer {
+  display: none;
+}
+
+.mao-dashboard-hero.is-deck .mao-realtime-charts-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mao-dashboard-hero.is-deck .mao-realtime-chart-canvas-wrap {
+  height: 64px;
+}
+
+@media (max-width: 1199px) {
+  .mao-dashboard-hero.is-deck .mao-realtime-charts-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .mao-dashboard-hero.is-deck .mao-realtime-chart-canvas-wrap {
+    display: none;
+  }
+
+  .mao-dashboard-hero.is-deck .mao-realtime-chart-card {
+    padding-bottom: 8px;
+  }
+
+  .mao-dashboard-hero.is-deck .mao-progress-subtitle,
+  .mao-dashboard-hero.is-deck .is-bandwidth-badge {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .mao-dashboard-hero.is-deck {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mao-dashboard-hero.is-deck .hub-core {
+    order: -1;
+    justify-self: center;
+  }
+}
+
+.domain-watch {
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.domain-watch-nearest {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.domain-watch-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 8px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.domain-watch-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.domain-watch-row {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: #f9fafb;
+}
+
+:root[data-appearance="dark"] .domain-watch-row {
+  background: #141416;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.domain-watch-row[data-level="warning"] {
+  border-color: color-mix(in srgb, var(--status-warning) 45%, transparent);
+}
+
+.domain-watch-row[data-level="warning"] .domain-watch-date {
+  color: var(--status-warning);
+}
+
+.domain-watch-row[data-level="expired"] {
+  border-color: color-mix(in srgb, var(--status-error) 55%, transparent);
+}
+
+.domain-watch-row[data-level="expired"] .domain-watch-date {
+  color: var(--status-error);
+}
+
+.domain-watch-row-main,
+.domain-watch-row-sub {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.domain-watch-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.domain-watch-note {
+  flex-shrink: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.domain-watch-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.domain-watch-date {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary, var(--text-tertiary));
+}
+
+.domain-watch-more {
+  font-size: 11px;
+  text-align: center;
+  color: var(--text-tertiary);
+}

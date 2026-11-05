@@ -97,6 +97,29 @@ function formatRebootAgo(seconds: number): { value: string; unit: string; fullTe
   return { value: String(minutes), unit: "分钟前", fullText: `${minutes}分钟前` };
 }
 
+/** 资产统计页入口：有临期设备时变色，悬停弹续费提醒。 */
+export function AssetEntry({
+  nodes,
+  onOpenChange,
+}: {
+  nodes: RenewalReminderSource[];
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const renewalCount = getRenewalReminders(nodes, Date.now(), { requireOnlineForExpired: true }).length;
+  return (
+    <RenewalReminder nodes={nodes} onOpenChange={onOpenChange}>
+      <Link
+        to="/assets"
+        className="overview-card-action mao-stat-action"
+        aria-label="打开资产统计页"
+        title={renewalCount > 0 ? `${renewalCount} 台设备即将到期` : "资产统计"}
+      >
+        <CircleDollarSign size={14} className={renewalCount > 0 ? "text-(--status-warning)" : ""} />
+      </Link>
+    </RenewalReminder>
+  );
+}
+
 export const OverviewStatCard: React.FC<OverviewStatCardProps> = ({
   cardId,
   overview,
@@ -113,10 +136,6 @@ export const OverviewStatCard: React.FC<OverviewStatCardProps> = ({
   onClick,
 }) => {
   const [renewalPopoverOpen, setRenewalPopoverOpen] = React.useState(false);
-  const renewalReminders = renewalNodes
-    ? getRenewalReminders(renewalNodes, Date.now(), { requireOnlineForExpired: true })
-    : [];
-  const renewalCount = renewalReminders.length;
 
   const totalTcpConn = overview?.totalTcpConn ?? 1250;
   const totalUdpConn = overview?.totalUdpConn ?? 90;
@@ -331,16 +350,7 @@ export const OverviewStatCard: React.FC<OverviewStatCardProps> = ({
               <span className="mao-stat-label">资产总值</span>
             </div>
             {showDetailButton && (
-              <RenewalReminder nodes={renewalNodes || []} onOpenChange={setRenewalPopoverOpen}>
-                <Link
-                  to="/assets"
-                  className="overview-card-action mao-stat-action"
-                  aria-label="打开资产统计页"
-                  title={renewalCount > 0 ? `${renewalCount} 台设备即将到期` : "资产统计"}
-                >
-                  <CircleDollarSign size={14} className={renewalCount > 0 ? "text-(--status-warning)" : ""} />
-                </Link>
-              </RenewalReminder>
+              <AssetEntry nodes={renewalNodes || []} onOpenChange={setRenewalPopoverOpen} />
             )}
           </div>
           <div className="mao-stat-value">

@@ -252,6 +252,18 @@ export const ServersResponseSchema = z
 
 export type ServersResponse = z.output<typeof ServersResponseSchema>;
 
+/** 后台 `list_domains` 的一行；D1 里可空的列可能回 null。 */
+export const DomainRecordSchema = z.object({
+  name: z.string(),
+  note: z.string().nullish(),
+  registrar: z.string().nullish(),
+  expire_date: z.string().nullish(),
+  last_error: z.string().nullish(),
+});
+export type DomainRecord = z.output<typeof DomainRecordSchema>;
+
+export const DomainsResponseSchema = z.object({ domains: z.array(DomainRecordSchema) });
+
 export const SiteConfigSchema = z
   .object({
     version: looseString.default(""),

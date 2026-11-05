@@ -75,14 +75,6 @@ const MAX_SAMPLES_PER_NODE = 192;
 const MIN_THINNED_GAP_MS = PING_WINDOW_MS / MAX_SAMPLES_PER_NODE;
 /** 后端窗口的网格步长推不出来时的兜底：实测是 2 分钟一格。 */
 const DEFAULT_WINDOW_STEP_MS = 120_000;
-/**
- * 判定后端窗口「这一段是复制出来的」所需的连续相同格数。
- *
- * 后端 `buildFixedLatencySeries` 用无上限最近邻填满 30 格，桶里缺的那些格全是同一个样本的
- * 复印件（详见 CLAUDE.md）。所有线路的延迟**和**丢包同时逐字节相同、还连着好几格，
- * 真探测不会这样 —— 取 4 格（8 分钟）作为门槛，宁可漏判也不误杀。
- */
-const BACKFILL_RUN_MIN_LENGTH = 4;
 /** 本地样本间隔推不出来时的兜底。 */
 const DEFAULT_LOCAL_CADENCE_MS = 40_000;
 /**
@@ -127,14 +119,6 @@ function hasAnyValue(ping: CarrierPingSnapshot): boolean {
   return CARRIER_KEYS.some((key) => ping[key] != null);
 }
 
-/** 这一刻有没有哪条线路整轮超时（负值，见 mappers 的 PING_TIMEOUT_VALUE）。 */
-function hasTimeout(ping: CarrierPingSnapshot): boolean {
-  return CARRIER_KEYS.some((key) => {
-    const value = ping[key];
-    return value != null && value < 0;
-  });
-}
-
 function isFresh(sample: PingLiveSample, now: number): boolean {
   return sample.time > 0 && now - sample.time <= SAMPLE_TTL_MS;
 }
@@ -174,11 +158,9 @@ function thinSamples(samples: readonly PingLiveSample[]): PingLiveSample[] {
 }
 
 /**
- * 全部线路（含 v1.2.14 新增的后四条）逐条比。**不能只比前四条**：这个函数同时管着三件事 ——
- * ① `recordPingSample` 的「值变了就记一个样本」；② `sameSeries` 判断重算结果有没有变；
- * ③ `dropBackfilledRuns` 判断连续几格是不是复印件。漏比后四条的后果分别是：新线路的探测落地
- * 不记样本、只有新线路变化的重算结果被旧缓存顶掉、以及**前四条恰好相同就被当成复印段整段丢掉**
- * （比较的字段越少越容易误判）。
+ * 全部线路（含 v1.2.14 新增的后四条）逐条比。**不能只比前四条**：这个函数同时管着两件事 ——
+ * ① `recordPingSample` 的「值变了就记一个样本」；② `sameSeries` 判断重算结果有没有变。
+ * 漏比后四条的后果分别是：新线路的探测落地不记样本、只有新线路变化的重算结果被旧缓存顶掉。
  */
 function samePing(a: CarrierPingSnapshot, b: CarrierPingSnapshot): boolean {
   for (const key of CARRIER_KEYS) {
@@ -499,43 +481,6 @@ function sameSeries(a: readonly PingLiveSample[], b: readonly PingLiveSample[]):
 }
 
 /**
- * 丢掉后端窗口里复制出来的那些格子。
- *
- * 后端不是「没有数据就留空」，而是保证凑够 30 格：缺的格子取距离最近的样本（`findNearestLatencySample`
- * 没有距离上限）复制过来，时间戳照 2 分钟网格铺满一小时。于是一台刚加进来 7 分钟的节点，
- * 窗口里也会有一整个小时的「数据」—— 线上实测：30 格全是 `1/1/1`，而历史表里只有 13 行、跨度 6.3 分钟。
- *
- * 复印件的特征是**连续若干格逐字节相同**（所有线路的延迟和丢包同时一模一样）。真探测做不到这个，
- * 所以按 {@link BACKFILL_RUN_MIN_LENGTH} 格为界把整段丢掉 —— 留空比画一段编出来的数据诚实，
- * 图表对没值的槽位本来就是留白的，丢包加权平均也不会再被这些格子带偏。
- *
- * 整段丢掉而不是「保留一格」：复制源可能在这段的任意一端，留哪一格都是猜。真值那一格在
- * 相邻的非重复段里本来就还在。
- *
- * **含整轮超时的段不丢**：持续断网时每一格都是「延迟超时、丢包 100」，逐字节相同却是真实数据；
- * 当复印件丢掉的话，一段断网在首页上是一片空白而不是一排红格。
- */
-function dropBackfilledRuns(
-  window: readonly PingLiveSample[],
-): readonly PingLiveSample[] {
-  if (window.length < BACKFILL_RUN_MIN_LENGTH) return window;
-
-  const kept: PingLiveSample[] = [];
-  let runStart = 0;
-  for (let index = 1; index <= window.length; index += 1) {
-    const same =
-      index < window.length && samePing(window[index]!.ping, window[runStart]!.ping);
-    if (same) continue;
-    const runLength = index - runStart;
-    if (runLength < BACKFILL_RUN_MIN_LENGTH || hasTimeout(window[runStart]!.ping)) {
-      for (let i = runStart; i < index; i += 1) kept.push(window[i]!);
-    }
-    runStart = index;
-  }
-  return kept;
-}
-
-/**
  * 记下后端下发的窗口。
  *
  * 只存一份最新的，不与本地累积做并集 —— 合并规则见 {@link mergeWindowWithLocal}。
@@ -549,13 +494,13 @@ export function seedPingHistory(
 
   hydrate();
   const now = Date.now();
-  const usable = [...window]
+  // 后端每格都是那段时间的真实样本（没样本的格子值为 null），延迟再平稳也是真数据，不能按「连续相同」丢弃。
+  const fresh = [...window]
     .filter((sample) => isFresh(sample, now))
     .sort((left, right) => left.time - right.time);
-  const fresh = dropBackfilledRuns(usable);
 
   const previous = windowByUuid.get(uuid);
-  // 整段都是复印件时 fresh 为空：也要落盘，否则上一份（含复印件的）窗口会一直留着。
+  // 整段都过期时 fresh 为空：也要落盘，否则上一份窗口会一直留着。
   if (fresh.length === 0) {
     if (previous == null || previous.length === 0) return;
     windowByUuid.set(uuid, EMPTY_SAMPLES);

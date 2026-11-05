@@ -76,8 +76,7 @@ describe("整轮超时", () => {
     ]);
   });
 
-  it("survives the copied-run filter: a sustained outage is real, not a backend copy", () => {
-    // 新后端每格都是真实采样；连着 5 格整轮超时是真断网，逐字节相同也不是复印件。
+  it("keeps a sustained outage in the window", () => {
     seedPingHistory(
       "node-a",
       [25, 19, 13, 7, 1].map((minutesAgo) => sample(minutesAgo, TIMEOUT)),

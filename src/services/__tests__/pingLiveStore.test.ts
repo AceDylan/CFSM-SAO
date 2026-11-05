@@ -493,7 +493,6 @@ describe("采样与计权的准确度", () => {
       "node-a",
       Array.from({ length: 20 }, (_, index) => ({
         time: NOW - (19 - index) * 6 * 60_000,
-        // 延迟逐格不同：一模一样的连续格子会被当成后端复印件整段丢掉（见 dropBackfilledRuns）。
         ping: ping({ ct: 200 + index, lossCt: 0 }),
       })),
     );
@@ -524,7 +523,7 @@ describe("retainPingNodes", () => {
   });
 });
 
-describe("丢弃后端窗口里复制出来的格子", () => {
+describe("后端窗口里连续相同的格子", () => {
   const NOW = Date.now();
   const STEP = 120_000;
 
@@ -543,72 +542,39 @@ describe("丢弃后端窗口里复制出来的格子", () => {
     }));
   }
 
-  it("刚加进来的节点：整窗口都是复印件，一格都不画", () => {
-    const uuid = "fresh-node";
-    // 线上实测形状：30 格全是 1/1/1，而历史表里只有 6 分钟的行。
-    seedPingHistory(uuid, windowOf(Array.from({ length: 30 }, () => [1, 1, 1])));
+  it("延迟恒定的节点：整窗口都是真样本，柱子不断", () => {
+    const uuid = "steady-node";
+    // 线上 home 的形状：只有一条线路，20 格全是同一个数。
+    seedPingHistory(uuid, windowOf(Array.from({ length: 20 }, () => [34, 34, 34])));
 
-    expect(getPingHistorySnapshot(uuid)).toHaveLength(0);
+    expect(getPingHistorySnapshot(uuid)).toHaveLength(20);
+    const item = buildPingOverviewItem(uuid, 1, getPingHistorySnapshot(uuid));
+    const buckets = buildPingBuckets(item, 20, NOW);
+    expect(buckets.filter((bucket) => bucket.total > 0)).toHaveLength(20);
   });
 
-  it("只丢重复段，末尾真值留着", () => {
-    const uuid = "partly-real";
+  it("中间一段延迟不变也不丢", () => {
+    const uuid = "partly-steady";
     const values: Array<[number, number, number]> = [
-      ...Array.from({ length: 27 }, () => [136, 143, 150] as [number, number, number]),
-      [134, 140, 149],
-      [134, 145, 149],
-      [137, 141, 149],
+      ...Array.from({ length: 6 }, () => [34, 34, 34] as [number, number, number]),
+      [36, 36, 36],
+      ...Array.from({ length: 6 }, () => [34, 34, 34] as [number, number, number]),
     ];
     seedPingHistory(uuid, windowOf(values));
 
-    const kept = getPingHistorySnapshot(uuid);
-    expect(kept).toHaveLength(3);
-    expect(kept.map((sample) => sample.ping.ct)).toEqual([134, 134, 137]);
+    expect(getPingHistorySnapshot(uuid)).toHaveLength(13);
   });
 
-  it("正常波动的窗口一格不丢", () => {
-    const uuid = "varying";
-    const values = Array.from(
-      { length: 30 },
-      (_, index) => [130 + (index % 7), 140 + (index % 5), 150 + (index % 3)] as [number, number, number],
-    );
-    seedPingHistory(uuid, windowOf(values));
-
-    expect(getPingHistorySnapshot(uuid)).toHaveLength(30);
-  });
-
-  it("新节点刷新之后：只画真实覆盖到的那几分钟，其余留空", () => {
-    const uuid = "fresh-node-refreshed";
-    // 后端窗口整段是复印件（线上 Uzumaru-tw 的形状），历史表里只有最近 6 分钟。
-    seedPingHistory(uuid, windowOf(Array.from({ length: 30 }, () => [1, 1, 1])));
-    seedMeasuredHistory(
-      uuid,
-      Array.from({ length: 12 }, (_, index) => ({
-        time: NOW - (11 - index) * 30_000,
-        ping: ping({ ct: 40 + index, cu: 41, cm: 42, lossCt: 0 }),
-      })),
-    );
+  it("后端没采到的格子是 null：画出来是空的", () => {
+    const uuid = "with-gap";
+    const window = windowOf(Array.from({ length: 10 }, () => [34, 34, 34]));
+    for (const index of [3, 4, 5, 6]) {
+      window[index] = { time: window[index]!.time, ping: ping({}) };
+    }
+    seedPingHistory(uuid, window);
 
     const item = buildPingOverviewItem(uuid, 1, getPingHistorySnapshot(uuid));
-    const buckets = buildPingBuckets(item, 30, NOW);
-    const active = buckets.filter((bucket) => bucket.total > 0).length;
-    // 一小时 30 格里只有最后几格该有值，绝不该是填满的一整个小时。
-    expect(active).toBeGreaterThan(0);
-    expect(active).toBeLessThanOrEqual(6);
+    const buckets = buildPingBuckets(item, 10, NOW);
+    expect(buckets.filter((bucket) => bucket.total > 0).length).toBeLessThan(10);
   });
-
-  it("短暂重复（不到门槛）不算复印件", () => {
-    const uuid = "short-repeat";
-    const values: Array<[number, number, number]> = [
-      [130, 140, 150],
-      [131, 141, 151],
-      [131, 141, 151],
-      [131, 141, 151],
-      [132, 142, 152],
-      [133, 143, 153],
-    ];
-    seedPingHistory(uuid, windowOf(values));
-
-    expect(getPingHistorySnapshot(uuid)).toHaveLength(6);
-  });
-})
+});

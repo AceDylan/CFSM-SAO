@@ -37,15 +37,47 @@ function applyHubTheme(theme: HubTheme) {
   applyEmbeddedAppearance(theme);
 }
 
+// Hub 的光圈接力要落到星核上：它问 {source:"hub", type:"beacon", id, wait}，这里回星核在本框内的
+// 圆心和刻度环半径；星核不在屏幕上（开着详情页、往下滚走了）就回 none，Hub 改落到舞台中央。
+const BEACON_WAIT_MAX_MS = 1500;
+const CORE_RING_RATIO = 184 / 400; // 刻度环半径 184，占 400×400 的画布
+
+type HubBeacon = { x: number; y: number; r: number };
+
+export function findHubCore(doc: Pick<Document, "querySelector"> = document, win: Pick<Window, "innerWidth" | "innerHeight"> = window): HubBeacon | null {
+  const box = doc.querySelector("[data-hub-core]")?.getBoundingClientRect();
+  if (!box?.width) return null;
+  const x = box.left + box.width / 2;
+  const y = box.top + box.height / 2;
+  if (x < 0 || y < 0 || x > win.innerWidth || y > win.innerHeight) return null;
+  return { x: Math.round(x), y: Math.round(y), r: Math.round(box.width * CORE_RING_RATIO) };
+}
+
+// 冷进入时 Hub 一听到 ready 就问：首页可能还没画出星核，等一小会儿；别的页面永远等不到，当场回 none。
+const onHomeRoute = () => /^#?\/?(\?|$)/.test(window.location.hash);
+
+async function answerBeacon(id: number, wait: unknown, origin: string) {
+  const maxWait = typeof wait === "number" && Number.isFinite(wait) ? Math.min(Math.max(wait, 0), BEACON_WAIT_MAX_MS) : 0;
+  const until = Date.now() + maxWait;
+  let core = findHubCore();
+  while (!core && onHomeRoute() && Date.now() < until) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    core = findHubCore();
+  }
+  window.parent.postMessage({ source: "cfsm", type: "beacon", id, ...(core ?? { none: true }) }, origin);
+}
+
 export function handleHubMessage(event: Pick<MessageEvent, "source" | "origin" | "data">) {
   if (event.source !== window.parent || event.origin !== HUB_ORIGIN) return;
-  const data = event.data as { source?: unknown; type?: unknown; theme?: unknown } | null;
+  const data = event.data as { source?: unknown; type?: unknown; theme?: unknown; id?: unknown; wait?: unknown } | null;
   if (!data || typeof data !== "object" || data.source !== "hub") return;
   if (data.type === "leave") setRealtimeHostPaused(true);
   else if (data.type === "enter") setRealtimeHostPaused(false);
   else if (data.type === "theme") {
     const theme = asHubTheme(data.theme);
     if (theme) applyHubTheme(theme);
+  } else if (data.type === "beacon" && Number.isSafeInteger(data.id)) {
+    void answerBeacon(data.id as number, data.wait, event.origin);
   }
 }
 

@@ -3840,3 +3840,165 @@
 :root[data-embed="hub"] .app-main {
   padding-top: 12px;
 }
+
+/* 内嵌时首页顶部的星核：同 Hub 首页反应堆一套刻度环，也是光圈接力的起落点。
+   触屏只留一条光弧在转、不加滤镜（手机浏览器合成层显存有限，Hub 在那里也不画反应堆本体）。 */
+.hub-core {
+  --hub-core-cyan: #0891b2;
+  --hub-core-violet: #7c3aed;
+  --hub-core-magenta: #db2777;
+  --hub-core-glow: rgb(8 145 178 / 0.28);
+  --hub-core-text: #0b3a46;
+  position: relative;
+  width: clamp(168px, 17vw, 228px);
+  aspect-ratio: 1;
+  margin: 0 auto 6px;
+  pointer-events: none;
+}
+
+:root[data-appearance="dark"] .hub-core {
+  --hub-core-cyan: #5ee7ff;
+  --hub-core-violet: #a78bfa;
+  --hub-core-magenta: #f472d0;
+  --hub-core-glow: rgb(94 231 255 / 0.35);
+  --hub-core-text: #e6fbff;
+}
+
+.hub-core__svg,
+.hub-core__sweep,
+.hub-core__body {
+  position: absolute;
+}
+
+.hub-core__svg {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+}
+
+.hub-core__svg * {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
+.hub-core__ticks {
+  stroke: var(--hub-core-cyan);
+  stroke-width: 1;
+  opacity: 0.45;
+  animation: hub-core-spin 80s linear infinite;
+}
+
+.hub-core__ticks .is-major {
+  stroke-width: 1.8;
+}
+
+.hub-core__dash {
+  stroke: var(--hub-core-violet);
+  stroke-width: 1;
+  stroke-dasharray: 2 7;
+  opacity: 0.6;
+  animation: hub-core-spin 46s linear infinite reverse;
+}
+
+.hub-core__arcs {
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px var(--hub-core-glow));
+  animation: hub-core-spin 14s linear infinite;
+}
+
+.hub-core__orbit {
+  fill: var(--hub-core-cyan);
+  filter: drop-shadow(0 0 4px var(--hub-core-cyan));
+  animation: hub-core-spin 9s linear infinite;
+}
+
+.hub-core__orbit.is-slow {
+  fill: var(--hub-core-magenta);
+  filter: drop-shadow(0 0 4px var(--hub-core-magenta));
+  animation-duration: 24s;
+  animation-direction: reverse;
+}
+
+.hub-core__sweep {
+  inset: 8%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 80%, var(--hub-core-glow) 98%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle, transparent 30%, #000 31%, #000 70%, transparent 71%);
+  mask-image: radial-gradient(circle, transparent 30%, #000 31%, #000 70%, transparent 71%);
+  opacity: 0.7;
+  animation: hub-core-spin 4.8s linear infinite;
+}
+
+.hub-core__body {
+  inset: 26%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--hub-core-glow) 0, transparent 70%);
+}
+
+.hub-core__read {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--hub-core-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.hub-core__read b {
+  font-size: clamp(26px, 2.7vw, 36px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.hub-core__read small {
+  margin-left: 2px;
+  font-size: 0.5em;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.hub-core__read span {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--hub-core-cyan);
+}
+
+.hub-core.is-alert .hub-core__read span {
+  color: var(--hub-core-magenta);
+}
+
+@keyframes hub-core-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (hover: none) {
+  .hub-core__arcs,
+  .hub-core__orbit {
+    filter: none;
+  }
+
+  .hub-core__sweep {
+    display: none;
+  }
+
+  .hub-core__ticks,
+  .hub-core__dash,
+  .hub-core__orbit {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-core * {
+    animation: none;
+  }
+}

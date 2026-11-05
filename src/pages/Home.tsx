@@ -3,9 +3,11 @@ import { useSearchParams } from "react-router-dom";
 import { SiteFooter } from "@/components/shell/SiteFooter";
 import { NodeGrid } from "@/components/node/NodeGrid";
 import { FloatingControls } from "@/components/shell/FloatingControls";
+import { HubCore } from "@/components/shell/HubCore";
 import { Spinner } from "@/components/ui/Spinner";
 import { useNodeStoreStatus } from "@/hooks/useNode";
 import { useThemeSettings } from "@/hooks/useThemeSettings";
+import { isHubEmbed } from "@/services/hubEmbed";
 import { safeLazy } from "@/utils/safeLazy";
 
 const ThemeManage = safeLazy(() =>
@@ -30,6 +32,7 @@ function HomeDashboard() {
       className={`home-dashboard relative${controlsExpanded ? " is-controls-expanded" : ""}`}
     >
       {homeReady && <FloatingControls onExpandedChange={setControlsExpanded} />}
+      {isHubEmbed() && <HubCore />}
       <NodeGrid />
       <SiteFooter />
     </div>

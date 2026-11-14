@@ -315,6 +315,7 @@ export function toNodeInfo(server: CfsmServer): NodeInfo {
     group: server.server_group,
     region: server.region,
     hidden: String(server.is_hidden) === "1",
+    standby: String(server.offline_notify_disabled) === "1",
     cpu_name: server.cpu_info,
     cpu_cores: server.cpu_cores,
     arch: server.arch,

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNodeOnlineSummaries } from "@/hooks/useNode";
 import { useVisibleNodes } from "@/hooks/useVisibleNodes";
+import { coreCounts, coreStatusLabel } from "@/utils/coreCounts";
 
 const TICK_ANGLES = Array.from({ length: 120 }, (_, i) => i * 3);
 
@@ -8,19 +9,20 @@ const TICK_ANGLES = Array.from({ length: 120 }, (_, i) => i * 3);
  * 内嵌在 Bookmark Hub 时首页顶部的星核：和 Hub 首页反应堆同一套刻度环，
  * 也是 Hub 光圈接力的起落点（位置经 hubEmbed 的 beacon 报给 Hub）。
  * 中间只写真实读数：可见节点里在线几台、离线几台。
+ * 允许关机的节点（standby）关着时只记待机，不变洋红。
  */
 export function HubCore() {
   const nodes = useVisibleNodes();
   const summaries = useNodeOnlineSummaries();
-  const { online, offline } = useMemo(() => {
-    const state = new Map(summaries.map((node) => [node.uuid, node.online]));
-    return {
-      online: nodes.filter((node) => state.get(node.uuid) === true).length,
-      offline: nodes.filter((node) => state.get(node.uuid) === false).length,
-    };
-  }, [nodes, summaries]);
+  const counts = useMemo(
+    () => coreCounts(nodes, new Map(summaries.map((node) => [node.uuid, node.online]))),
+    [nodes, summaries],
+  );
+  const { online, offline, standby } = counts;
   const total = nodes.length;
-  const summary = total === 0 ? "暂无节点数据" : `在线 ${online} 台，共 ${total} 台，离线 ${offline} 台`;
+  const summary = total === 0
+    ? "暂无节点数据"
+    : `在线 ${online} 台，共 ${total} 台，离线 ${offline} 台${standby > 0 ? `，待机 ${standby} 台` : ""}`;
 
   return (
     <div
@@ -69,7 +71,7 @@ export function HubCore() {
           {total === 0 ? "--" : online}
           <small>/{total === 0 ? "--" : total}</small>
         </b>
-        <span>{total === 0 ? "SYNCING" : offline > 0 ? `${offline} OFFLINE` : "ALL ONLINE"}</span>
+        <span>{coreStatusLabel(total, counts)}</span>
       </div>
     </div>
   );

@@ -382,6 +382,11 @@ export interface NodeInfo {
   group: string;
   region: string;
   hidden: boolean;
+  /**
+   * 允许关机的节点（后台关了离线通知，比如家里那台常关机的电脑）。
+   * 离线时只算待机，不让星核报警。只有登录后才拿得到这个字段。
+   */
+  standby?: boolean;
   cpu_name: string;
   cpu_cores: number;
   arch: string;
